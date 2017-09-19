@@ -31,8 +31,8 @@ namespace HDISED_GPU
                 Console.WriteLine("Running examples using {0}", gpu.GetDeviceProperties(false).Name);
 
 
-                //SQL.Execute();    // glowna funkcja
-                SQL.Test();         // testowa funkcja               
+                SQL.Execute();    // glowna funkcja
+                //SQL.Test();         // testowa funkcja               
             }
             catch (Exception ex)
             {

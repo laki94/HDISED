@@ -5,3 +5,4 @@ D:\Visual_projekty\V13\HDISED_GPU\HDISED_GPU\bin\Debug\Cudafy.NET.dll
 D:\Visual_projekty\V13\HDISED_GPU\HDISED_GPU\bin\Debug\Cudafy.NET.xml
 D:\Visual_projekty\V13\HDISED_GPU\HDISED_GPU\obj\Debug\HDISED_GPU.exe
 D:\Visual_projekty\V13\HDISED_GPU\HDISED_GPU\obj\Debug\HDISED_GPU.pdb
+D:\Visual_projekty\V13\HDISED_GPU\HDISED_GPU\obj\Debug\HDISED_GPU.csprojResolveAssemblyReference.cache

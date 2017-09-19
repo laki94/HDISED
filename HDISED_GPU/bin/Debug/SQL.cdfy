@@ -4,15 +4,28 @@
   <PTXMODULES />
   <BinaryModules />
   <SourceCodes>
-    <SourceCodeFile ID="7cf116be-3f3e-4c24-8ae9-23c8b7232fa9" Language="OpenCL" Arch="OpenCL">I2lmIGRlZmluZWQoY2xfa2hyX2ZwNjQpDQojcHJhZ21hIE9QRU5DTCBFWFRFTlNJT04gY2xfa2hyX2ZwNjQ6IGVuYWJsZQ0KI2VsaWYgZGVmaW5lZChjbF9hbWRfZnA2NCkNCiNwcmFnbWEgT1BFTkNMIEVYVEVOU0lPTiBjbF9hbWRfZnA2NDogZW5hYmxlDQojZW5kaWYNCg0KLy8gSERJU0VEX0dQVS5TUUwNCl9fa2VybmVsICB2b2lkIGNhbGN1bGF0ZUFnZ3JlZ2F0aW9uKGdsb2JhbCBmbG9hdCogcmVjVmFsR1BVLCBpbnQgcmVjVmFsR1BVTGVuMCwgZ2xvYmFsIGZsb2F0KiBjYWxWYWxHUFUsIGludCBjYWxWYWxHUFVMZW4wKTsNCg0KLy8gSERJU0VEX0dQVS5TUUwNCl9fa2VybmVsICB2b2lkIGNhbGN1bGF0ZUFnZ3JlZ2F0aW9uKGdsb2JhbCBmbG9hdCogcmVjVmFsR1BVLCBpbnQgcmVjVmFsR1BVTGVuMCwgZ2xvYmFsIGZsb2F0KiBjYWxWYWxHUFUsIGludCBjYWxWYWxHUFVMZW4wKQ0Kew0KCWZvciAoaW50IGkgPSBnZXRfZ3JvdXBfaWQoMCk7IGkgPCAxMDsgaSArPSBnZXRfbnVtX2dyb3VwcygwKSkNCgl7DQoJCWlmIChjYWxWYWxHUFVbKDApXSA9PSAwLjBmIHx8IHJlY1ZhbEdQVVsoaSldIDwgY2FsVmFsR1BVWygwKV0pDQoJCXsNCgkJCWNhbFZhbEdQVVsoMCldID0gcmVjVmFsR1BVWyhpKV07DQoJCX0NCgkJaWYgKGNhbFZhbEdQVVsoMSldID09IDAuMGYgfHwgcmVjVmFsR1BVWyhpKV0gPiBjYWxWYWxHUFVbKDEpXSkNCgkJew0KCQkJY2FsVmFsR1BVWygxKV0gPSByZWNWYWxHUFVbKGkpXTsNCgkJfQ0KCQljYWxWYWxHUFVbKDIpXSArPSByZWNWYWxHUFVbKGkpXTsNCgkJaWYgKGkgPT0gOSkNCgkJew0KCQkJY2FsVmFsR1BVWygyKV0gLz0gMTAuMGY7DQoJCX0NCgl9DQp9DQo=</SourceCodeFile>
+    <SourceCodeFile ID="7fa3d9ac-bc68-431a-8d2c-1a3dcbb85f91" Language="OpenCL" Arch="OpenCL">I2lmIGRlZmluZWQoY2xfa2hyX2ZwNjQpDQojcHJhZ21hIE9QRU5DTCBFWFRFTlNJT04gY2xfa2hyX2ZwNjQ6IGVuYWJsZQ0KI2VsaWYgZGVmaW5lZChjbF9hbWRfZnA2NCkNCiNwcmFnbWEgT1BFTkNMIEVYVEVOU0lPTiBjbF9hbWRfZnA2NDogZW5hYmxlDQojZW5kaWYNCg0KLy8gSERJU0VEX0dQVS5TUUwNCl9fa2VybmVsICB2b2lkIGNhbGN1bGF0ZUZ1ZWxWb2x1bWUoZ2xvYmFsIGZsb2F0KiBwcmV2TWVhc3VyZXMsIGludCBwcmV2TWVhc3VyZXNMZW4wLCBnbG9iYWwgZmxvYXQqIGFjdE1lYXN1cmVzLCBpbnQgYWN0TWVhc3VyZXNMZW4wKTsNCi8vIEhESVNFRF9HUFUuU1FMDQpfX2tlcm5lbCAgdm9pZCBjYWxjdWxhdGVBZ2dyZWdhdGlvbihnbG9iYWwgZmxvYXQqIHJlY1ZhbEdQVSwgaW50IHJlY1ZhbEdQVUxlbjAsIGdsb2JhbCBmbG9hdCogY2FsVmFsR1BVLCBpbnQgY2FsVmFsR1BVTGVuMCk7DQoNCi8vIEhESVNFRF9HUFUuU1FMDQpfX2tlcm5lbCAgdm9pZCBjYWxjdWxhdGVGdWVsVm9sdW1lKGdsb2JhbCBmbG9hdCogcHJldk1lYXN1cmVzLCBpbnQgcHJldk1lYXN1cmVzTGVuMCwgZ2xvYmFsIGZsb2F0KiBhY3RNZWFzdXJlcywgaW50IGFjdE1lYXN1cmVzTGVuMCkNCnsNCglmb3IgKGludCBpID0gZ2V0X2dyb3VwX2lkKDApOyBpIDwgcHJldk1lYXN1cmVzTGVuMDsgaSArPSBnZXRfbnVtX2dyb3VwcygwKSkNCgl7DQoJCWlmICgocHJldk1lYXN1cmVzWyhpKV0gLT0gYWN0TWVhc3VyZXNbKGkpXSkgIT0gMC4wZikNCgkJew0KCQkJcHJldk1lYXN1cmVzWyhpKV0gLz0gMzAuMGY7DQoJCX0NCgl9DQp9DQovLyBIRElTRURfR1BVLlNRTA0KX19rZXJuZWwgIHZvaWQgY2FsY3VsYXRlQWdncmVnYXRpb24oZ2xvYmFsIGZsb2F0KiByZWNWYWxHUFUsIGludCByZWNWYWxHUFVMZW4wLCBnbG9iYWwgZmxvYXQqIGNhbFZhbEdQVSwgaW50IGNhbFZhbEdQVUxlbjApDQp7DQoJZm9yIChpbnQgaSA9IGdldF9ncm91cF9pZCgwKTsgaSA8IDEwOyBpICs9IGdldF9udW1fZ3JvdXBzKDApKQ0KCXsNCgkJaWYgKGNhbFZhbEdQVVsoMCldID09IDAuMGYgfHwgcmVjVmFsR1BVWyhpKV0gPCBjYWxWYWxHUFVbKDApXSkNCgkJew0KCQkJY2FsVmFsR1BVWygwKV0gPSByZWNWYWxHUFVbKGkpXTsNCgkJfQ0KCQlpZiAoY2FsVmFsR1BVWygxKV0gPT0gMC4wZiB8fCByZWNWYWxHUFVbKGkpXSA+IGNhbFZhbEdQVVsoMSldKQ0KCQl7DQoJCQljYWxWYWxHUFVbKDEpXSA9IHJlY1ZhbEdQVVsoaSldOw0KCQl9DQoJCWNhbFZhbEdQVVsoMildICs9IHJlY1ZhbEdQVVsoaSldOw0KCQlpZiAoaSA9PSA5KQ0KCQl7DQoJCQljYWxWYWxHUFVbKDIpXSAvPSAxMC4wZjsNCgkJfQ0KCX0NCn0NCg==</SourceCodeFile>
   </SourceCodes>
   <Functions>
+    <CudafyKernelMethod Name="calculateFuelVolume" Type="Global" IsDummy="false" DummyBehaviour="Default">
+      <Type>HDISED_GPU.SQL</Type>
+      <Assembly>HDISED_GPU, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</Assembly>
+      <AssemblyName>HDISED_GPU</AssemblyName>
+      <AssemblyPath>D:\Visual_projekty\V13\HDISED_GPU\HDISED_GPU\bin\Debug\HDISED_GPU.exe</AssemblyPath>
+      <Checksum>1132175326</Checksum>
+      <Parameters>
+        <ReturnType>System.Void</ReturnType>
+        <Parameter Type="Cudafy.GThread" Name="thread" Position="0" />
+        <Parameter Type="System.Single[]" Name="prevMeasures" Position="1" />
+        <Parameter Type="System.Single[]" Name="actMeasures" Position="2" />
+      </Parameters>
+    </CudafyKernelMethod>
     <CudafyKernelMethod Name="calculateAggregation" Type="Global" IsDummy="false" DummyBehaviour="Default">
       <Type>HDISED_GPU.SQL</Type>
       <Assembly>HDISED_GPU, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</Assembly>
       <AssemblyName>HDISED_GPU</AssemblyName>
       <AssemblyPath>D:\Visual_projekty\V13\HDISED_GPU\HDISED_GPU\bin\Debug\HDISED_GPU.exe</AssemblyPath>
-      <Checksum>3063253592</Checksum>
+      <Checksum>1132175326</Checksum>
       <Parameters>
         <ReturnType>System.Void</ReturnType>
         <Parameter Type="Cudafy.GThread" Name="thread" Position="0" />
