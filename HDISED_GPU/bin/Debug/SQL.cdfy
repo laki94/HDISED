@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CudafyModule Version="1.29.5576.13786" Name="SQL" DebugInfo="false" HasCudaSourceCode="false" HasPTX="false" HasBinary="false">
+  <CudaSourceCode></CudaSourceCode>
+  <PTXMODULES />
+  <BinaryModules />
+  <SourceCodes>
+    <SourceCodeFile ID="7cf116be-3f3e-4c24-8ae9-23c8b7232fa9" Language="OpenCL" Arch="OpenCL">I2lmIGRlZmluZWQoY2xfa2hyX2ZwNjQpDQojcHJhZ21hIE9QRU5DTCBFWFRFTlNJT04gY2xfa2hyX2ZwNjQ6IGVuYWJsZQ0KI2VsaWYgZGVmaW5lZChjbF9hbWRfZnA2NCkNCiNwcmFnbWEgT1BFTkNMIEVYVEVOU0lPTiBjbF9hbWRfZnA2NDogZW5hYmxlDQojZW5kaWYNCg0KLy8gSERJU0VEX0dQVS5TUUwNCl9fa2VybmVsICB2b2lkIGNhbGN1bGF0ZUFnZ3JlZ2F0aW9uKGdsb2JhbCBmbG9hdCogcmVjVmFsR1BVLCBpbnQgcmVjVmFsR1BVTGVuMCwgZ2xvYmFsIGZsb2F0KiBjYWxWYWxHUFUsIGludCBjYWxWYWxHUFVMZW4wKTsNCg0KLy8gSERJU0VEX0dQVS5TUUwNCl9fa2VybmVsICB2b2lkIGNhbGN1bGF0ZUFnZ3JlZ2F0aW9uKGdsb2JhbCBmbG9hdCogcmVjVmFsR1BVLCBpbnQgcmVjVmFsR1BVTGVuMCwgZ2xvYmFsIGZsb2F0KiBjYWxWYWxHUFUsIGludCBjYWxWYWxHUFVMZW4wKQ0Kew0KCWZvciAoaW50IGkgPSBnZXRfZ3JvdXBfaWQoMCk7IGkgPCAxMDsgaSArPSBnZXRfbnVtX2dyb3VwcygwKSkNCgl7DQoJCWlmIChjYWxWYWxHUFVbKDApXSA9PSAwLjBmIHx8IHJlY1ZhbEdQVVsoaSldIDwgY2FsVmFsR1BVWygwKV0pDQoJCXsNCgkJCWNhbFZhbEdQVVsoMCldID0gcmVjVmFsR1BVWyhpKV07DQoJCX0NCgkJaWYgKGNhbFZhbEdQVVsoMSldID09IDAuMGYgfHwgcmVjVmFsR1BVWyhpKV0gPiBjYWxWYWxHUFVbKDEpXSkNCgkJew0KCQkJY2FsVmFsR1BVWygxKV0gPSByZWNWYWxHUFVbKGkpXTsNCgkJfQ0KCQljYWxWYWxHUFVbKDIpXSArPSByZWNWYWxHUFVbKGkpXTsNCgkJaWYgKGkgPT0gOSkNCgkJew0KCQkJY2FsVmFsR1BVWygyKV0gLz0gMTAuMGY7DQoJCX0NCgl9DQp9DQo=</SourceCodeFile>
+  </SourceCodes>
+  <Functions>
+    <CudafyKernelMethod Name="calculateAggregation" Type="Global" IsDummy="false" DummyBehaviour="Default">
+      <Type>HDISED_GPU.SQL</Type>
+      <Assembly>HDISED_GPU, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</Assembly>
+      <AssemblyName>HDISED_GPU</AssemblyName>
+      <AssemblyPath>D:\Visual_projekty\V13\HDISED_GPU\HDISED_GPU\bin\Debug\HDISED_GPU.exe</AssemblyPath>
+      <Checksum>3063253592</Checksum>
+      <Parameters>
+        <ReturnType>System.Void</ReturnType>
+        <Parameter Type="Cudafy.GThread" Name="thread" Position="0" />
+        <Parameter Type="System.Single[]" Name="recValGPU" Position="1" />
+        <Parameter Type="System.Single[]" Name="calValGPU" Position="2" />
+      </Parameters>
+    </CudafyKernelMethod>
+  </Functions>
+  <Constants />
+  <Types />
+</CudafyModule>
