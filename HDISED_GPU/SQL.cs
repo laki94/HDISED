@@ -62,7 +62,6 @@ namespace HDISED_GPU
             for (int i = 0; reader.Read(); i++)
             {
                 Object value = reader.GetValue(0);
-                //receivedValues[i] = Int32.Parse(Math.Round(float.Parse(value.ToString())).ToString()); // Glupie ale dziala xD         
                 receivedValues[i] = float.Parse(value.ToString());
             }
                 reader.Close();
@@ -98,7 +97,6 @@ namespace HDISED_GPU
 
                 if ((calValGPU[1] == 0) || (recValGPU[tid] > calValGPU[1])) // MAX
                     calValGPU[1] = recValGPU[tid];
-
 
                 calValGPU[2] += recValGPU[tid];
 
