@@ -19,6 +19,7 @@ namespace HDISED_GPU
         public const string DATADB = "Data";
         public const string RESULTDB = "Calculations";
         public const string ARCHIVESDB = "Archives";
+        public const string SERVER = "localhost";
 
         public static List<int> tanks;
         public static List<int> nozzles;
@@ -206,7 +207,7 @@ namespace HDISED_GPU
         public static void sendTankMeasuresResultsToDatabase(string table, int[] fuelLevel = null, float[] fuelVolume = null, int[] fuelTemperature = null, int[] waterLevel = null, float[] waterVolume = null)
         {
             var tmpQuery = "INSERT INTO " + table + " VALUES (";
-            var calcConnection = connectToServer("localhost", RESULTDB, "sa", "root");
+            var calcConnection = connectToServer(SERVER, RESULTDB, "sa", "root");
             SqlCommand insertData = new SqlCommand(tmpQuery);
             NumberFormatInfo nfi = new NumberFormatInfo();
             nfi.NumberDecimalSeparator = ".";
@@ -250,7 +251,7 @@ namespace HDISED_GPU
         public static void sendNozzleMeasuresResultsToDatabase(string table, float[] totalCounter = null)
         {
             var tmpQuery = "INSERT INTO " + table + " VALUES (";
-            var calcConnection = connectToServer("localhost", RESULTDB, "sa", "root");
+            var calcConnection = connectToServer(SERVER, RESULTDB, "sa", "root");
             SqlCommand insertData = new SqlCommand(tmpQuery);
             NumberFormatInfo nfi = new NumberFormatInfo();
             nfi.NumberDecimalSeparator = ".";
@@ -277,7 +278,7 @@ namespace HDISED_GPU
             const int PREVIOUS_MEASURES = 0;
             const int ACTUAL_MEASURES = 1;
 
-            dataConnection = connectToServer("localhost", DATADB, "sa", "root");
+            dataConnection = connectToServer(SERVER, DATADB, "sa", "root");
             prepareGPU();
 
             tanks = getItems(dataConnection, "TankMeasures", "TankId");
@@ -334,7 +335,7 @@ namespace HDISED_GPU
             GPGPU gpu = CudafyHost.GetDevice(CudafyModes.Target, CudafyModes.DeviceId);
             gpu.LoadModule(km);
 
-            archivesConnection = connectToServer("localhost", ARCHIVESDB, "sa", "root");
+            archivesConnection = connectToServer(SERVER, ARCHIVESDB, "sa", "root");
             var selectAll = new SqlCommand("SELECT TOP (" + N + ") FuelVolume FROM RefuelStream");
             selectAll.Connection = archivesConnection;
             var reader = selectAll.ExecuteReader();
@@ -368,7 +369,7 @@ namespace HDISED_GPU
             max = (int)Math.Round(calculatedValues[1]);
             avg = (int)Math.Round(calculatedValues[2]);
 
-            dataConnection = connectToServer("localhost", DATADB, "sa", "root");
+            dataConnection = connectToServer(SERVER, DATADB, "sa", "root");
             var insertData = new SqlCommand("INSERT INTO TankMeasures(FuelLevel, FuelVolume, FuelTemperature) VALUES (" + min + ", " + max + ", " + avg + ")");
             insertData.Connection = dataConnection;
             insertData.ExecuteNonQuery();
