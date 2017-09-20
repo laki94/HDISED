@@ -8,6 +8,7 @@ using Cudafy;
 using Cudafy.Host;
 using Cudafy.Translator;
 using System.Globalization;
+using System.Threading;
 
 namespace HDISED_GPU
 {
@@ -20,6 +21,8 @@ namespace HDISED_GPU
         public const string RESULTDB = "Calculations";
         public const string ARCHIVESDB = "Archives";
         public const string SERVER = "localhost";
+        public const string USER = "sa";
+        public const string PASSWORD = "root";
 
         public static List<int> tanks;
         public static List<int> nozzles;
@@ -108,6 +111,30 @@ namespace HDISED_GPU
             
             reader.Close();
             return tmpList;
+        }
+
+        private static DateTime getDate(SqlConnection connection, string table, int id)
+        {
+            SqlCommand query = new SqlCommand("Select date from " + table + " where TimeId = " + id);
+            query.Connection = connection;
+            var reader = query.ExecuteReader();
+            reader.Read();
+            var result = reader.GetDateTime(0);
+            reader.Close();
+           
+            return result;
+        }
+
+        private static int getLastDate(SqlConnection connection, string table)
+        {
+            SqlCommand query = new SqlCommand("Select top (1) TimeId from " + table + " order by TimeId desc");
+            query.Connection = connection;
+            var reader = query.ExecuteReader();
+            reader.Read();
+            var result = reader.GetInt32(0);
+            reader.Close();
+
+            return result;
         }
 
         private static int[][] getPrevAndActValuesInt(SqlConnection dataConnection, string table, string parameter, int length, bool isNozzleIdNecessary = false)
@@ -207,14 +234,14 @@ namespace HDISED_GPU
         public static void sendTankMeasuresResultsToDatabase(string table, int[] fuelLevel = null, float[] fuelVolume = null, int[] fuelTemperature = null, int[] waterLevel = null, float[] waterVolume = null)
         {
             var tmpQuery = "INSERT INTO " + table + " VALUES (";
-            var calcConnection = connectToServer(SERVER, RESULTDB, "sa", "root");
+            var calcConnection = connectToServer(SERVER, RESULTDB, USER, PASSWORD);
             SqlCommand insertData = new SqlCommand(tmpQuery);
             NumberFormatInfo nfi = new NumberFormatInfo();
             nfi.NumberDecimalSeparator = ".";
 
             for (int id = 0; id < tanks.Count; id++) 
             {
-                insertData.CommandText += lastTimeStamp + ", " + (lastTimeStamp + WAITTIME) + ", " + tanks[id];
+                insertData.CommandText += "'" + getDate(dataConnection, "Time", lastTimeStamp) + "'" + ", " + "'" + getDate(dataConnection, "Time", (lastTimeStamp + WAITTIME)) + "'" + ", " + tanks[id];
                 if (fuelLevel != null)
                     insertData.CommandText += ", " + fuelLevel[id]; 
                 else
@@ -251,14 +278,14 @@ namespace HDISED_GPU
         public static void sendNozzleMeasuresResultsToDatabase(string table, float[] totalCounter = null)
         {
             var tmpQuery = "INSERT INTO " + table + " VALUES (";
-            var calcConnection = connectToServer(SERVER, RESULTDB, "sa", "root");
+            var calcConnection = connectToServer(SERVER, RESULTDB, USER, PASSWORD);
             SqlCommand insertData = new SqlCommand(tmpQuery);
             NumberFormatInfo nfi = new NumberFormatInfo();
             nfi.NumberDecimalSeparator = ".";
 
             for (int id = 0; id < nozzles.Count; id++)
             {
-                insertData.CommandText += lastTimeStamp + ", " + (lastTimeStamp + WAITTIME) + ", " + nozzles[id];
+                insertData.CommandText += "'" + getDate(dataConnection, "Time", lastTimeStamp) + "'" + ", " + "'" + getDate(dataConnection, "Time", (lastTimeStamp + WAITTIME)) + "'" + ", " + nozzles[id];
 
                 if (totalCounter != null)
                     insertData.CommandText += ", " + totalCounter[id].ToString(nfi);
@@ -273,42 +300,63 @@ namespace HDISED_GPU
             calcConnection.Close();
         }
 
-        public static void Execute()
+        public static void Execute(int waitTime = WAITTIME)
         {
             const int PREVIOUS_MEASURES = 0;
             const int ACTUAL_MEASURES = 1;
+            dataConnection = connectToServer(SERVER, DATADB, USER, PASSWORD);
 
-            dataConnection = connectToServer(SERVER, DATADB, "sa", "root");
+            int lastDBUpdate = getLastDate(dataConnection, "Time");
+
             prepareGPU();
 
-            tanks = getItems(dataConnection, "TankMeasures", "TankId");
+            while ((lastTimeStamp + waitTime) < lastDBUpdate)
+            {
+                tanks = getItems(dataConnection, "TankMeasures", "TankId");
 
-            float[][] fuelVolumeMeasures = getPrevAndActValuesFloat(dataConnection,"TankMeasures", "FuelVolume", tanks.Count);
-            float[] resFuelVol = prepareAndCalculateFloatData(fuelVolumeMeasures[PREVIOUS_MEASURES], fuelVolumeMeasures[ACTUAL_MEASURES]);
+                float[][] fuelVolumeMeasures = getPrevAndActValuesFloat(dataConnection, "TankMeasures", "FuelVolume", tanks.Count);
+                float[] resFuelVol = prepareAndCalculateFloatData(fuelVolumeMeasures[PREVIOUS_MEASURES], fuelVolumeMeasures[ACTUAL_MEASURES]);
 
-            int[][] fuelLevelMeasures = getPrevAndActValuesInt(dataConnection, "TankMeasures", "FuelLevel", tanks.Count);
-            int[] resFuelLevel = prepareAndCalculateIntData(fuelLevelMeasures[PREVIOUS_MEASURES], fuelLevelMeasures[ACTUAL_MEASURES]);
+                int[][] fuelLevelMeasures = getPrevAndActValuesInt(dataConnection, "TankMeasures", "FuelLevel", tanks.Count);
+                int[] resFuelLevel = prepareAndCalculateIntData(fuelLevelMeasures[PREVIOUS_MEASURES], fuelLevelMeasures[ACTUAL_MEASURES]);
 
-            int[][] fuelTemperature = getPrevAndActValuesInt(dataConnection, "TankMeasures", "FuelTemperature", tanks.Count);
-            int[] resFuelTemperature = prepareAndCalculateIntData(fuelTemperature[PREVIOUS_MEASURES], fuelTemperature[ACTUAL_MEASURES]);
+                int[][] fuelTemperature = getPrevAndActValuesInt(dataConnection, "TankMeasures", "FuelTemperature", tanks.Count);
+                int[] resFuelTemperature = prepareAndCalculateIntData(fuelTemperature[PREVIOUS_MEASURES], fuelTemperature[ACTUAL_MEASURES]);
 
-            int[][] waterLevel = getPrevAndActValuesInt(dataConnection, "TankMeasures", "WaterLevel", tanks.Count);
-            int[] resWaterLevel = prepareAndCalculateIntData(waterLevel[PREVIOUS_MEASURES], waterLevel[ACTUAL_MEASURES]);
+                int[][] waterLevel = getPrevAndActValuesInt(dataConnection, "TankMeasures", "WaterLevel", tanks.Count);
+                int[] resWaterLevel = prepareAndCalculateIntData(waterLevel[PREVIOUS_MEASURES], waterLevel[ACTUAL_MEASURES]);
 
-            float[][] waterVolume = getPrevAndActValuesFloat(dataConnection, "TankMeasures", "WaterVolume", tanks.Count);
-            float[] resWaterVolume = prepareAndCalculateFloatData(waterVolume[PREVIOUS_MEASURES], waterVolume[ACTUAL_MEASURES]);
+                float[][] waterVolume = getPrevAndActValuesFloat(dataConnection, "TankMeasures", "WaterVolume", tanks.Count);
+                float[] resWaterVolume = prepareAndCalculateFloatData(waterVolume[PREVIOUS_MEASURES], waterVolume[ACTUAL_MEASURES]);
 
-            nozzles = getItems(dataConnection, "NozzleMeasures", "NozzleId");
+                nozzles = getItems(dataConnection, "NozzleMeasures", "NozzleId");
 
-            float[][] totalCounter = getPrevAndActValuesFloat(dataConnection, "NozzleMeasures", "TotalCounter", nozzles.Count, true);
-            float[] resTotalCounter = prepareAndCalculateFloatData(totalCounter[PREVIOUS_MEASURES], totalCounter[ACTUAL_MEASURES]);
+                float[][] totalCounter = getPrevAndActValuesFloat(dataConnection, "NozzleMeasures", "TotalCounter", nozzles.Count, true);
+                float[] resTotalCounter = prepareAndCalculateFloatData(totalCounter[PREVIOUS_MEASURES], totalCounter[ACTUAL_MEASURES]);
 
-            sendTankMeasuresResultsToDatabase("TankCalculations", resFuelLevel, resFuelVol, resFuelTemperature, resWaterLevel, resWaterVolume);
-            sendNozzleMeasuresResultsToDatabase("NozzleCalculations", resTotalCounter);
+                sendTankMeasuresResultsToDatabase("TankCalculations", resFuelLevel, resFuelVol, resFuelTemperature, resWaterLevel, resWaterVolume);
+                sendNozzleMeasuresResultsToDatabase("NozzleCalculations", resTotalCounter);
 
-            lastTimeStamp += WAITTIME;
+                lastTimeStamp += WAITTIME;
+                tanks.Clear();
+                nozzles.Clear();
 
+                Console.WriteLine((lastTimeStamp + waitTime) + " - " + lastDBUpdate);
+            }
+            Console.WriteLine("Nie mozna agregowac dalej, brak nowych danych dla podanego przedzialu czasowego " + lastTimeStamp + " / " + lastDBUpdate);
+            if (archivesConnection != null) 
+                archivesConnection.Close();
 
+            if (dataConnection != null)
+                dataConnection.Close();
+
+            if (resultsConnection != null)
+            resultsConnection.Close();
+
+            Console.WriteLine("Czekanie przez " + waitTime * 60000 + "s ...");
+            Thread.Sleep(waitTime * 60000);
+            Execute(waitTime);
+            
             /* for (int i = 0; i < results.Length; i++)
              {
                  Console.WriteLine("Calc: " + results[i]);
@@ -322,8 +370,6 @@ namespace HDISED_GPU
            
         }
 
-        
-
         public static void Test()
         {
             int min = 0;
@@ -335,7 +381,7 @@ namespace HDISED_GPU
             GPGPU gpu = CudafyHost.GetDevice(CudafyModes.Target, CudafyModes.DeviceId);
             gpu.LoadModule(km);
 
-            archivesConnection = connectToServer(SERVER, ARCHIVESDB, "sa", "root");
+            archivesConnection = connectToServer(SERVER, ARCHIVESDB, USER, PASSWORD);
             var selectAll = new SqlCommand("SELECT TOP (" + N + ") FuelVolume FROM RefuelStream");
             selectAll.Connection = archivesConnection;
             var reader = selectAll.ExecuteReader();
@@ -369,7 +415,7 @@ namespace HDISED_GPU
             max = (int)Math.Round(calculatedValues[1]);
             avg = (int)Math.Round(calculatedValues[2]);
 
-            dataConnection = connectToServer(SERVER, DATADB, "sa", "root");
+            dataConnection = connectToServer(SERVER, DATADB, USER, PASSWORD);
             var insertData = new SqlCommand("INSERT INTO TankMeasures(FuelLevel, FuelVolume, FuelTemperature) VALUES (" + min + ", " + max + ", " + avg + ")");
             insertData.Connection = dataConnection;
             insertData.ExecuteNonQuery();
