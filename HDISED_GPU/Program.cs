@@ -30,7 +30,6 @@ namespace HDISED_GPU
                 GPGPU gpu = CudafyHost.GetDevice(CudafyModes.Target, CudafyModes.DeviceId);
                 Console.WriteLine("Running examples using {0}", gpu.GetDeviceProperties(false).Name);
 
-
                 SQL.Execute();    // glowna funkcja
                 //SQL.Test();         // testowa funkcja               
             }
