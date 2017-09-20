@@ -7,6 +7,7 @@ using System.Data.SqlClient;
 using Cudafy;
 using Cudafy.Host;
 using Cudafy.Translator;
+using System.Globalization;
 
 namespace HDISED_GPU
 {
@@ -53,19 +54,19 @@ namespace HDISED_GPU
             return query;
         }
 
-        public static float[] executeForEveryTank(SqlCommand _query)
+        public static string[] executeForEveryTank(SqlCommand _query)
         {
             var tmpQuery = _query;
             string orgCommText = _query.CommandText;
             var reader = tmpQuery.ExecuteReader();
             Array enumItems = Enum.GetValues(typeof(TankID));
 
-            float[] result = new float[enumItems.Length];
+            string[] result = new string[enumItems.Length];
             foreach(int id in enumItems)
             {
                 tmpQuery.CommandText += " and TankId = " + id;
                 if (reader.Read())
-                    result[id - 1] = Convert.ToSingle(reader.GetValue(0));
+                    result[id - 1] = reader.GetValue(0).ToString();//Convert.ToSingle(reader.GetValue(0));
                 else
                     throw new Exception("Nie mozna odnalezc danych dla podanych parametrow");
                 tmpQuery.CommandText = orgCommText;
@@ -74,16 +75,45 @@ namespace HDISED_GPU
             return result;
         }
 
-        public static float[][] getPrevAndActFuelVolume(SqlConnection connection)
+        private static int[][] getPrevAndActValuesInt(SqlConnection dataConnection, string parameter)
         {
-            float[][] result = new float[2][];
-            float[] previousMeasures = executeForEveryTank(getParameterCommand("TankMeasures", "FuelVolume", lastTimeStamp));
-            float[] actualMeasures = executeForEveryTank(getParameterCommand("TankMeasures", "FuelVolume", lastTimeStamp + WAITTIME));
-            lastTimeStamp += WAITTIME;
+            int[][] result = new int[2][];
+            string[] tmpPrev = executeForEveryTank(getParameterCommand("TankMeasures", parameter, lastTimeStamp));
+            string[] tmpAct = executeForEveryTank(getParameterCommand("TankMeasures", parameter, lastTimeStamp + WAITTIME));
+            int[] previousMeasures = new int[Enum.GetValues(typeof(TankID)).Length];
+            int[] actualMeasures = new int[Enum.GetValues(typeof(TankID)).Length];
+
+            for (int i = 0; i < previousMeasures.Length; i++)
+            {
+                previousMeasures[i] = Int32.Parse(tmpPrev[i]);
+                actualMeasures[i] = Int32.Parse(tmpAct[i]);
+            }
+
             result[0] = previousMeasures;
             result[1] = actualMeasures;
             return result;
         }
+
+        private static float[][] getPrevAndActValuesFloat(SqlConnection dataConnection, string parameter)
+        {
+            float[][] result = new float[2][];
+            string[] tmpPrev = executeForEveryTank(getParameterCommand("TankMeasures", parameter, lastTimeStamp));
+            string[] tmpAct = executeForEveryTank(getParameterCommand("TankMeasures", parameter, lastTimeStamp + WAITTIME));
+            float[] previousMeasures = new float[Enum.GetValues(typeof(TankID)).Length];
+            float[] actualMeasures = new float[Enum.GetValues(typeof(TankID)).Length];
+
+            for (int i = 0; i < previousMeasures.Length; i++)
+            {
+                previousMeasures[i] = float.Parse(tmpPrev[i]);
+                actualMeasures[i] = float.Parse(tmpAct[i]);
+            }
+
+            result[0] = previousMeasures;
+            result[1] = actualMeasures;
+            return result;
+        }
+
+
 
         public static void prepareGPU()
         {
@@ -92,44 +122,118 @@ namespace HDISED_GPU
             gpu.LoadModule(km);
         }
 
-        public static float[] prepareAndCalculateFuelVolume()
+        public static float[] prepareAndCalculateFloatData(float[] prevMeasures, float[] actMeasures)
         {
-            const int PREVIOUS_MEASURES = 0;
-            const int ACTUAL_MEASURES = 1;
+            float[] previousMeasuresGPU = gpu.Allocate<float>(prevMeasures);
+            float[] actualMeasuresGPU = gpu.Allocate<float>(actMeasures);
+            gpu.CopyToDevice(prevMeasures, previousMeasuresGPU);
+            gpu.CopyToDevice(actMeasures, actualMeasuresGPU);
 
-            float[][] measures = getPrevAndActFuelVolume(dataConnection);
+            gpu.Launch(prevMeasures.Length, 1).calculateDataWithCudafy(previousMeasuresGPU, actualMeasuresGPU);
+            gpu.CopyFromDevice(previousMeasuresGPU, prevMeasures);
+            gpu.FreeAll();
+            return prevMeasures;
+        }
 
-            float[] previousMeasuresGPU = gpu.Allocate<float>(measures[PREVIOUS_MEASURES]);
-            float[] actualMeasuresGPU = gpu.Allocate<float>(measures[ACTUAL_MEASURES]);
-            gpu.CopyToDevice(measures[PREVIOUS_MEASURES], previousMeasuresGPU);
-            gpu.CopyToDevice(measures[ACTUAL_MEASURES], actualMeasuresGPU);
+        public static int[] prepareAndCalculateIntData(int[] prevMeasures, int[] actMeasures)
+        {
+            int[] previousMeasuresGPU = gpu.Allocate<int>(prevMeasures);
+            int[] actualMeasuresGPU = gpu.Allocate<int>(actMeasures);
+            gpu.CopyToDevice(prevMeasures, previousMeasuresGPU);
+            gpu.CopyToDevice(actMeasures, actualMeasuresGPU);
 
-            gpu.Launch(measures[PREVIOUS_MEASURES].Length, 1).calculateFuelVolume(previousMeasuresGPU, actualMeasuresGPU);
-            gpu.CopyFromDevice(previousMeasuresGPU, measures[PREVIOUS_MEASURES]);
-            return measures[PREVIOUS_MEASURES];
+            gpu.Launch(prevMeasures.Length, 1).calculateDataWithCudafy(previousMeasuresGPU, actualMeasuresGPU);
+            gpu.CopyFromDevice(previousMeasuresGPU, prevMeasures);
+            gpu.FreeAll();
+            return prevMeasures;
+        }
 
+        public static void sendResultsToDatabase(string table, int[] fuelLevel = null, float[] fuelVolume = null, int[] fuelTemperature = null, int[] waterLevel = null, float[] waterVolume = null)
+        {
+            var tmpQuery = "INSERT INTO " + table + " VALUES (";
+            var calcConnection = connectToServer("localhost", "Calculations", "sa", "root");
+            SqlCommand insertData = new SqlCommand(tmpQuery);
+            NumberFormatInfo nfi = new NumberFormatInfo();
+            nfi.NumberDecimalSeparator = ".";
+
+            Array enumItems = Enum.GetValues(typeof(TankID));
+            foreach (int id in enumItems)
+            {
+                insertData.CommandText += lastTimeStamp + ", " + id;
+                if (fuelLevel != null)
+                    insertData.CommandText += ", " + fuelLevel[id - 1]; 
+                else
+                    insertData.CommandText += ", " + 0; 
+
+                if (fuelVolume != null)
+                    insertData.CommandText += ", " + fuelVolume[id - 1].ToString(nfi);
+                else
+                    insertData.CommandText += ", " + 0; 
+
+                if (fuelTemperature != null)
+                    insertData.CommandText += ", " + fuelTemperature[id - 1];
+                else
+                    insertData.CommandText += ", " + 0; 
+
+                if (waterLevel != null)
+                    insertData.CommandText += ", " + waterLevel[id - 1];
+                else
+                    insertData.CommandText += ", " + 0; 
+
+                if (waterVolume != null)
+                    insertData.CommandText += ", " + waterVolume[id - 1].ToString(nfi);
+                else
+                    insertData.CommandText += ", " + 0; 
+
+                insertData.CommandText += ")";
+                insertData.Connection = calcConnection;
+                insertData.ExecuteNonQuery();
+                insertData.CommandText = tmpQuery;   
+            }
+            calcConnection.Close();
         }
 
         public static void Execute()
         {
+            const int PREVIOUS_MEASURES = 0;
+            const int ACTUAL_MEASURES = 1;
+
             dataConnection = connectToServer("localhost", "Data", "sa", "root");
             prepareGPU();
-            float[] results = prepareAndCalculateFuelVolume();
-            
+
+            float[][] fuelVolumeMeasures = getPrevAndActValuesFloat(dataConnection, "FuelVolume");
+            float[] resFuelVol = prepareAndCalculateFloatData(fuelVolumeMeasures[PREVIOUS_MEASURES], fuelVolumeMeasures[ACTUAL_MEASURES]);
+
+            int[][] fuelLevelMeasures = getPrevAndActValuesInt(dataConnection, "FuelLevel");
+            int[] resFuelLevel = prepareAndCalculateIntData(fuelLevelMeasures[PREVIOUS_MEASURES], fuelLevelMeasures[ACTUAL_MEASURES]);
+
+            int[][] fuelTemperature = getPrevAndActValuesInt(dataConnection, "FuelTemperature");
+            int[] resFuelTemperature = prepareAndCalculateIntData(fuelTemperature[PREVIOUS_MEASURES], fuelTemperature[ACTUAL_MEASURES]);
+
+            int[][] waterLevel = getPrevAndActValuesInt(dataConnection, "WaterLevel");
+            int[] resWaterLevel = prepareAndCalculateIntData(waterLevel[PREVIOUS_MEASURES], waterLevel[ACTUAL_MEASURES]);
+
+            float[][] waterVolume = getPrevAndActValuesFloat(dataConnection, "WaterVolume");
+            float[] resWaterVolume = prepareAndCalculateFloatData(waterVolume[PREVIOUS_MEASURES], waterVolume[ACTUAL_MEASURES]);
+
+            lastTimeStamp += WAITTIME;
+            sendResultsToDatabase("TankCalculations",resFuelLevel, resFuelVol, resFuelTemperature, resWaterLevel, resWaterVolume);
+
+
+            /* for (int i = 0; i < results.Length; i++)
+             {
+                 Console.WriteLine("Calc: " + results[i]);
+                 //Console.WriteLine("ACT: " + actualMeasures[i]);
+             }
            
 
-            for (int i = 0; i < results.Length; i++)
-            {
-                Console.WriteLine("Calc: " + results[i]);
-                //Console.WriteLine("ACT: " + actualMeasures[i]);
-            }
-           
-
-            /*for (int i=0;i<previousMeasures.Length;i++)
-                Console.WriteLine("OBLICZONE: " + previousMeasures[i]);*/
+             for (int i=0;i<previousMeasures.Length;i++)
+                 Console.WriteLine("OBLICZONE: " + previousMeasures[i]);*/
                 
            
         }
+
+        
 
         public static void Test()
         {
@@ -186,7 +290,7 @@ namespace HDISED_GPU
         }
 
         [Cudafy]
-        public static void calculateFuelVolume(GThread thread, float[] prevMeasures, float[] actMeasures)
+        public static void calculateDataWithCudafy(GThread thread, float[] prevMeasures, float[] actMeasures)
         {
            int tid = thread.blockIdx.x;
            if (tid < prevMeasures.Length)
