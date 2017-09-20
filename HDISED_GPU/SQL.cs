@@ -20,6 +20,9 @@ namespace HDISED_GPU
         public static SqlConnection dataConnection;
         public static SqlConnection resultsConnection;
 
+        public static CudafyModule km;
+        public static GPGPU gpu;
+
         enum TankID
         {
             first = 1, 
@@ -50,7 +53,7 @@ namespace HDISED_GPU
             return query;
         }
 
-        public static float[] getFuelLevel(SqlCommand _query)
+        public static float[] executeForEveryTank(SqlCommand _query)
         {
             var tmpQuery = _query;
             string orgCommText = _query.CommandText;
@@ -71,36 +74,59 @@ namespace HDISED_GPU
             return result;
         }
 
+        public static float[][] getPrevAndActFuelVolume(SqlConnection connection)
+        {
+            float[][] result = new float[2][];
+            float[] previousMeasures = executeForEveryTank(getParameterCommand("TankMeasures", "FuelVolume", lastTimeStamp));
+            float[] actualMeasures = executeForEveryTank(getParameterCommand("TankMeasures", "FuelVolume", lastTimeStamp + WAITTIME));
+            lastTimeStamp += WAITTIME;
+            result[0] = previousMeasures;
+            result[1] = actualMeasures;
+            return result;
+        }
+
+        public static void prepareGPU()
+        {
+            km = CudafyTranslator.Cudafy(); 
+            gpu = CudafyHost.GetDevice(CudafyModes.Target, CudafyModes.DeviceId);
+            gpu.LoadModule(km);
+        }
+
+        public static float[] prepareAndCalculateFuelVolume()
+        {
+            const int PREVIOUS_MEASURES = 0;
+            const int ACTUAL_MEASURES = 1;
+
+            float[][] measures = getPrevAndActFuelVolume(dataConnection);
+
+            float[] previousMeasuresGPU = gpu.Allocate<float>(measures[PREVIOUS_MEASURES]);
+            float[] actualMeasuresGPU = gpu.Allocate<float>(measures[ACTUAL_MEASURES]);
+            gpu.CopyToDevice(measures[PREVIOUS_MEASURES], previousMeasuresGPU);
+            gpu.CopyToDevice(measures[ACTUAL_MEASURES], actualMeasuresGPU);
+
+            gpu.Launch(measures[PREVIOUS_MEASURES].Length, 1).calculateFuelVolume(previousMeasuresGPU, actualMeasuresGPU);
+            gpu.CopyFromDevice(previousMeasuresGPU, measures[PREVIOUS_MEASURES]);
+            return measures[PREVIOUS_MEASURES];
+
+        }
+
         public static void Execute()
         {
-            CudafyModule km = CudafyTranslator.Cudafy();
-
-            GPGPU gpu = CudafyHost.GetDevice(CudafyModes.Target, CudafyModes.DeviceId);
-            gpu.LoadModule(km);
-
             dataConnection = connectToServer("localhost", "Data", "sa", "root");
-
-            float[] previousMeasures = getFuelLevel(getParameterCommand("TankMeasures", "FuelVolume", lastTimeStamp));
-            float[] actualMeasures = getFuelLevel(getParameterCommand("TankMeasures", "FuelVolume",  lastTimeStamp + WAITTIME));
-            lastTimeStamp += WAITTIME;
-            float[] previousMeasuresGPU = gpu.Allocate<float>(previousMeasures);
-            float[] actualMeasuresGPU = gpu.Allocate<float>(actualMeasures);
-            gpu.CopyToDevice(previousMeasures, previousMeasuresGPU);
-            gpu.CopyToDevice(actualMeasures, actualMeasuresGPU);
-
-            gpu.Launch().calculateFuelVolume(previousMeasuresGPU, actualMeasuresGPU);
-
+            prepareGPU();
+            float[] results = prepareAndCalculateFuelVolume();
+            
            
 
-            for (int i = 0; i < previousMeasures.Length; i++)
+            for (int i = 0; i < results.Length; i++)
             {
-                Console.WriteLine("PREV: " + previousMeasures[i]);
-                Console.WriteLine("ACT: " + actualMeasures[i]);
+                Console.WriteLine("Calc: " + results[i]);
+                //Console.WriteLine("ACT: " + actualMeasures[i]);
             }
-            gpu.CopyFromDevice(previousMeasuresGPU, previousMeasures);
+           
 
-            for (int i=0;i<previousMeasures.Length;i++)
-                Console.WriteLine("OBLICZONE: " + previousMeasures[i]);
+            /*for (int i=0;i<previousMeasures.Length;i++)
+                Console.WriteLine("OBLICZONE: " + previousMeasures[i]);*/
                 
            
         }
@@ -162,13 +188,11 @@ namespace HDISED_GPU
         [Cudafy]
         public static void calculateFuelVolume(GThread thread, float[] prevMeasures, float[] actMeasures)
         {
-            int tid = thread.blockIdx.x;
-            while (tid < prevMeasures.Length) //(tid < N)
+           int tid = thread.blockIdx.x;
+           if (tid < prevMeasures.Length)
             {
                 if ((prevMeasures[tid] -= actMeasures[tid]) != 0)
                     prevMeasures[tid] /= WAITTIME;
-
-                tid += thread.gridDim.x;
             }
         }
 
