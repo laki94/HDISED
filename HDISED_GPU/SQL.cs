@@ -14,8 +14,7 @@ namespace HDISED_GPU
 {
     public class SQL
     {
-        public const int N = 10;
-        public const int WAITTIME = 30;
+        public const int WAITTIME = 10;
 
         public const string DATADB = "Data";
         public const string RESULTDB = "Calculations";
@@ -69,7 +68,10 @@ namespace HDISED_GPU
                 if (reader.Read())
                     result[id - 1] = reader.GetValue(0).ToString();
                 else
-                    throw new Exception("Nie mozna odnalezc danych dla podanych parametrow");
+                {
+                    reader.Close();
+                    return null;
+                }
                 tmpQuery.CommandText = orgCommText;
             }
             reader.Close();
@@ -89,7 +91,10 @@ namespace HDISED_GPU
                 if (reader.Read())
                     result[id - 1] = reader.GetValue(0).ToString();
                 else
-                    throw new Exception("Nie mozna odnalezc danych dla podanych parametrow");
+                {
+                    reader.Close();
+                    return null;
+                }
                 tmpQuery.CommandText = orgCommText;
             }
             reader.Close();
@@ -152,18 +157,24 @@ namespace HDISED_GPU
                 tmpPrev = executeForEveryTank(getParameterCommand(table, parameter, lastTimeStamp));
                 tmpAct = executeForEveryTank(getParameterCommand(table, parameter, lastTimeStamp + WAITTIME));
             }
-            int[] previousMeasures = new int[length];
-            int[] actualMeasures = new int[length];
 
-            for (int i = 0; i < previousMeasures.Length; i++)
+            if ((tmpPrev != null) && (tmpAct != null))
             {
-                previousMeasures[i] = Int32.Parse(tmpPrev[i]) >= 0 ? Int32.Parse(tmpPrev[i]) : 0;
-                actualMeasures[i] = Int32.Parse(tmpAct[i]) >0 ? Int32.Parse(tmpAct[i]) : 0;
-            }
+                int[] previousMeasures = new int[length];
+                int[] actualMeasures = new int[length];
 
-            result[0] = previousMeasures;
-            result[1] = actualMeasures;
-            return result;
+                for (int i = 0; i < previousMeasures.Length; i++)
+                {
+                    previousMeasures[i] = Int32.Parse(tmpPrev[i]) >= 0 ? Int32.Parse(tmpPrev[i]) : 0;
+                    actualMeasures[i] = Int32.Parse(tmpAct[i]) > 0 ? Int32.Parse(tmpAct[i]) : 0;
+                }
+
+                result[0] = previousMeasures;
+                result[1] = actualMeasures;
+                return result;
+            }
+            else
+                return null;
         }
 
         private static float[][] getPrevAndActValuesFloat(SqlConnection dataConnection,string table, string parameter, int length, bool isNozzleIdNecessary = false)
@@ -182,18 +193,22 @@ namespace HDISED_GPU
                 tmpAct = executeForEveryTank(getParameterCommand(table, parameter, lastTimeStamp + WAITTIME));
             }
 
-            float[] previousMeasures = new float[length];
-            float[] actualMeasures = new float[length];
-
-            for (int i = 0; i < previousMeasures.Length; i++)
+            if ((tmpPrev != null) && (tmpAct != null))
             {
-                previousMeasures[i] = float.Parse(tmpPrev[i]) >= 0 ? float.Parse(tmpPrev[i]) : 0;
-                actualMeasures[i] = float.Parse(tmpAct[i]) >= 0 ? float.Parse(tmpAct[i]) : 0;
-            }
+                float[] previousMeasures = new float[length];
+                float[] actualMeasures = new float[length];
 
-            result[0] = previousMeasures;
-            result[1] = actualMeasures;
-            return result;
+                for (int i = 0; i < previousMeasures.Length; i++)
+                {
+                    previousMeasures[i] = float.Parse(tmpPrev[i]) >= 0 ? float.Parse(tmpPrev[i]) : 0;
+                    actualMeasures[i] = float.Parse(tmpAct[i]) >= 0 ? float.Parse(tmpAct[i]) : 0;
+                }
+                result[0] = previousMeasures;
+                result[1] = actualMeasures;
+                return result;
+            }
+            else
+                return null;
         }
 
 
@@ -207,28 +222,38 @@ namespace HDISED_GPU
 
         public static float[] prepareAndCalculateFloatData(float[] prevMeasures, float[] actMeasures)
         {
-            float[] previousMeasuresGPU = gpu.Allocate<float>(prevMeasures);
-            float[] actualMeasuresGPU = gpu.Allocate<float>(actMeasures);
-            gpu.CopyToDevice(prevMeasures, previousMeasuresGPU);
-            gpu.CopyToDevice(actMeasures, actualMeasuresGPU);
+            if ((prevMeasures != null) && (actMeasures != null))
+            {
+                float[] previousMeasuresGPU = gpu.Allocate<float>(prevMeasures);
+                float[] actualMeasuresGPU = gpu.Allocate<float>(actMeasures);
+                gpu.CopyToDevice(prevMeasures, previousMeasuresGPU);
+                gpu.CopyToDevice(actMeasures, actualMeasuresGPU);
 
-            gpu.Launch(prevMeasures.Length, 1).calculateDataWithCudafy(previousMeasuresGPU, actualMeasuresGPU);
-            gpu.CopyFromDevice(previousMeasuresGPU, prevMeasures);
-            gpu.FreeAll();
-            return prevMeasures;
+                gpu.Launch(prevMeasures.Length, 1).calculateDataWithCudafy(previousMeasuresGPU, actualMeasuresGPU);
+                gpu.CopyFromDevice(previousMeasuresGPU, prevMeasures);
+                gpu.FreeAll();
+                return prevMeasures;
+            }
+            else
+                return null;
         }
 
         public static int[] prepareAndCalculateIntData(int[] prevMeasures, int[] actMeasures)
         {
-            int[] previousMeasuresGPU = gpu.Allocate<int>(prevMeasures);
-            int[] actualMeasuresGPU = gpu.Allocate<int>(actMeasures);
-            gpu.CopyToDevice(prevMeasures, previousMeasuresGPU);
-            gpu.CopyToDevice(actMeasures, actualMeasuresGPU);
+            if ((prevMeasures != null) && (actMeasures != null))
+            {
+                int[] previousMeasuresGPU = gpu.Allocate<int>(prevMeasures);
+                int[] actualMeasuresGPU = gpu.Allocate<int>(actMeasures);
+                gpu.CopyToDevice(prevMeasures, previousMeasuresGPU);
+                gpu.CopyToDevice(actMeasures, actualMeasuresGPU);
 
-            gpu.Launch(prevMeasures.Length, 1).calculateDataWithCudafy(previousMeasuresGPU, actualMeasuresGPU);
-            gpu.CopyFromDevice(previousMeasuresGPU, prevMeasures);
-            gpu.FreeAll();
-            return prevMeasures;
+                gpu.Launch(prevMeasures.Length, 1).calculateDataWithCudafy(previousMeasuresGPU, actualMeasuresGPU);
+                gpu.CopyFromDevice(previousMeasuresGPU, prevMeasures);
+                gpu.FreeAll();
+                return prevMeasures;
+            }
+            else
+                return null;
         }
 
         public static void sendTankMeasuresResultsToDatabase(string table, int[] fuelLevel = null, float[] fuelVolume = null, int[] fuelTemperature = null, int[] waterLevel = null, float[] waterVolume = null)
@@ -337,11 +362,11 @@ namespace HDISED_GPU
                 sendTankMeasuresResultsToDatabase("TankCalculations", resFuelLevel, resFuelVol, resFuelTemperature, resWaterLevel, resWaterVolume);
                 sendNozzleMeasuresResultsToDatabase("NozzleCalculations", resTotalCounter);
 
-                lastTimeStamp += WAITTIME;
+                lastTimeStamp += waitTime;
                 tanks.Clear();
                 nozzles.Clear();
 
-                Console.WriteLine((lastTimeStamp + waitTime) + " - " + lastDBUpdate);
+                Console.WriteLine(lastTimeStamp + " - " + lastDBUpdate);
             }
             Console.WriteLine("Nie mozna agregowac dalej, brak nowych danych dla podanego przedzialu czasowego " + lastTimeStamp + " / " + lastDBUpdate);
             if (archivesConnection != null) 
@@ -356,72 +381,6 @@ namespace HDISED_GPU
             Console.WriteLine("Czekanie przez " + waitTime * 60000 + "s ...");
             Thread.Sleep(waitTime * 60000);
             Execute(waitTime);
-            
-            /* for (int i = 0; i < results.Length; i++)
-             {
-                 Console.WriteLine("Calc: " + results[i]);
-                 //Console.WriteLine("ACT: " + actualMeasures[i]);
-             }
-           
-
-             for (int i=0;i<previousMeasures.Length;i++)
-                 Console.WriteLine("OBLICZONE: " + previousMeasures[i]);*/
-                
-           
-        }
-
-        public static void Test()
-        {
-            int min = 0;
-            int max = 0;
-            int avg = 0;
-
-            CudafyModule km = CudafyTranslator.Cudafy();
-
-            GPGPU gpu = CudafyHost.GetDevice(CudafyModes.Target, CudafyModes.DeviceId);
-            gpu.LoadModule(km);
-
-            archivesConnection = connectToServer(SERVER, ARCHIVESDB, USER, PASSWORD);
-            var selectAll = new SqlCommand("SELECT TOP (" + N + ") FuelVolume FROM RefuelStream");
-            selectAll.Connection = archivesConnection;
-            var reader = selectAll.ExecuteReader();
-
-            float[] receivedValues = new float[N];
-            float[] calculatedValues = new float[3];
-
-            float[] recValGpu = gpu.Allocate<float>(receivedValues);
-            float[] calValGpu = gpu.Allocate<float>(calculatedValues);
-
-            for (int i = 0; i < N; i++)
-                receivedValues[i] = 0;
-            for (int i = 0; i < 3; i++)
-                calculatedValues[i] = 0;
-
-            for (int i = 0; reader.Read(); i++)
-            {
-                Object value = reader.GetValue(0);
-                receivedValues[i] = float.Parse(value.ToString());
-            }
-                reader.Close();
-
-            gpu.CopyToDevice(receivedValues, recValGpu);
-            gpu.CopyToDevice(calculatedValues, calValGpu);
-
-            gpu.Launch().calculateMinMaxAvg(recValGpu, calValGpu); // Launch() bo dzialamy na 1 watku, mozna dac Launch(4, 1) wtedy jedziemy na 4 watkach ale trzeba blokowac zasoby czego nie ogarnalem.
-
-            gpu.CopyFromDevice(calValGpu, calculatedValues);
-
-            min = (int)Math.Round(calculatedValues[0]); // nie ogarnalem tez wkladania floatow do tabeli dlatego takie czary
-            max = (int)Math.Round(calculatedValues[1]);
-            avg = (int)Math.Round(calculatedValues[2]);
-
-            dataConnection = connectToServer(SERVER, DATADB, USER, PASSWORD);
-            var insertData = new SqlCommand("INSERT INTO TankMeasures(FuelLevel, FuelVolume, FuelTemperature) VALUES (" + min + ", " + max + ", " + avg + ")");
-            insertData.Connection = dataConnection;
-            insertData.ExecuteNonQuery();
-
-            archivesConnection.Close();
-            dataConnection.Close();
         }
 
         [Cudafy]
@@ -436,27 +395,6 @@ namespace HDISED_GPU
                 if (prevMeasures[tid] != 0)
                     prevMeasures[tid] /= WAITTIME;
             }
-        }
-
-        [Cudafy]
-        public static void calculateMinMaxAvg(GThread thread, float[] recValGPU, float[] calValGPU)
-        {
-            int tid = thread.blockIdx.x;
-            while (tid < N)
-            {
-                if ((calValGPU[0] == 0) || (recValGPU[tid] < calValGPU[0])) // MIN
-                    calValGPU[0] = recValGPU[tid];
-
-                if ((calValGPU[1] == 0) || (recValGPU[tid] > calValGPU[1])) // MAX
-                    calValGPU[1] = recValGPU[tid];
-
-                calValGPU[2] += recValGPU[tid];
-
-                if (tid == N-1)                                     // AVG
-                    calValGPU[2] /= N;
-
-                tid += thread.gridDim.x;
-            }
-        }
+        }    
     }
 }

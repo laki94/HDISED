@@ -29,8 +29,11 @@ namespace HDISED_GPU
                 }
                 GPGPU gpu = CudafyHost.GetDevice(CudafyModes.Target, CudafyModes.DeviceId);
                 Console.WriteLine("Running examples using {0}", gpu.GetDeviceProperties(false).Name);
-
-                SQL.Execute();    // glowna funkcja
+                int waitTime;
+                if (Int32.TryParse(args[0], out waitTime))
+                    SQL.Execute(waitTime);    // glowna funkcja
+                else
+                    Console.WriteLine("Nie podano liczby całkowitej, program zostanie wyłączony...");
                 //SQL.Test();         // testowa funkcja               
             }
             catch (Exception ex)
